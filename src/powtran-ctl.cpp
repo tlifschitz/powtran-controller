@@ -247,7 +247,7 @@ public:
     }
 
     // reads scaling params from the VFD (once)
-    bool init() {
+    bool loadScaling() {
         if (mMaxFreqHz > 0) return true;
         uint16_t v;
         if (!read(EE_F0_19, &v)) return false;
@@ -267,7 +267,7 @@ public:
     }
 
     bool runRpm(double rpm, double ramp) {
-        if (!init()) return false;
+        if (!loadScaling()) return false;
         if (mCfg.maxRpm > 0 && std::fabs(rpm) > mCfg.maxRpm) {
             printf("clamp: %g -> %g rpm (max_rpm)\n", rpm, mCfg.maxRpm);
             rpm = rpm < 0 ? -mCfg.maxRpm : mCfg.maxRpm;
@@ -276,7 +276,7 @@ public:
     }
 
     bool runHz(double hz, double ramp, bool reverse) {
-        if (!init()) return false;
+        if (!loadScaling()) return false;
         bool clamped;
         int pct = rpmToPct(hz * mCfg.rpmPerHz, mCfg.rpmPerHz, mMaxFreqHz, clamped);
         if (clamped) printf("clamp: %.2f Hz -> %.2f Hz (max freq)\n", hz, mMaxFreqHz);
@@ -290,7 +290,7 @@ public:
 
     bool stop(double ramp) {
         if (!std::isnan(ramp)) {
-            if (!init() || !setRamp(ramp, false, true)) return false;
+            if (!loadScaling() || !setRamp(ramp, false, true)) return false;
         }
         printf("stop (decel)\n");
         return write(REG_CONTROL, CMD_STOP);
