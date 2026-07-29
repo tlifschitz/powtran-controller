@@ -226,9 +226,10 @@ public:
     }
 
     // VFD switching noise (EMI) puts junk bytes on the bus while the motor
-    // runs: flush before every attempt and retry a few times
+    // runs: flush before every attempt and retry a few times. Reads get more
+    // attempts than writes because telemetry polls hit the noise most often.
     bool read(uint16_t addr, uint16_t *dst, int n = 1) {
-        for (int t = 0; t < 6; ++t) {
+        for (int t = 0; t < kReadAttempts; ++t) {
             modbus_flush(mCtx);
             if (modbus_read_registers(mCtx, addr, n, dst) == n) { gap(); return true; }
             gap();
@@ -237,7 +238,7 @@ public:
         return false;
     }
     bool write(uint16_t addr, uint16_t val) {
-        for (int t = 0; t < 4; ++t) {
+        for (int t = 0; t < kWriteAttempts; ++t) {
             modbus_flush(mCtx);
             if (modbus_write_register(mCtx, addr, val) == 1) { gap(); return true; }
             gap();
@@ -260,7 +261,7 @@ public:
 
     bool setRamp(double sec, bool accel, bool decel) {
         long ticks = std::lround(sec / mRampUnit);
-        if (ticks > 65000) ticks = 65000;
+        if (ticks > kMaxRampTicks) ticks = kMaxRampTicks;
         if (accel && !write(RAM_ACCEL, (uint16_t)ticks)) return false;
         if (decel && !write(RAM_DECEL, (uint16_t)ticks)) return false;
         return true;
@@ -332,8 +333,13 @@ public:
     double maxFreqHz() const { return mMaxFreqHz; }
 
 private:
+    static constexpr int kReadAttempts    = 6;
+    static constexpr int kWriteAttempts   = 4;
+    static constexpr long kMaxRampTicks   = 65000;  // F0.13/F0.14 range: 6500.0 s in 0.1 s units
+    static constexpr int kInterFrameGapUs = 20000;
+
     // ponytail: 20ms inter-frame gap keeps the half-duplex bus happy
-    static void gap() { usleep(20000); }
+    static void gap() { usleep(kInterFrameGapUs); }
 
     modbus_t *mCtx     = nullptr;
     Config mCfg;
