@@ -25,13 +25,13 @@ int main() {
     assert(parseCycleText(in, cfg, steps, err) && err.empty());
     assert(cfg.loop == 3 && cfg.rpmPerHz == 60.0);
     assert(steps.size() == 7);
-    assert(steps[0].cmd == "run" && steps[0].a == 3000 && steps[0].b == 1);
-    assert(steps[1].cmd == "wait" && steps[1].a == 2);
+    assert(steps[0].cmd == Cmd::Run && steps[0].a == 3000 && steps[0].b == 1);
+    assert(steps[1].cmd == Cmd::Wait && steps[1].a == 2);
     assert(steps[2].a == -1500 && steps[2].b == 0.5);
-    assert(steps[3].cmd == "hz" && steps[3].a == 25 && std::isnan(steps[3].b));
-    assert(steps[4].cmd == "write" && steps[4].a == 0x000D && steps[4].b == 10);
-    assert(steps[5].cmd == "stop" && steps[5].b == 1);
-    assert(steps[6].cmd == "coast");
+    assert(steps[3].cmd == Cmd::Hz && steps[3].a == 25 && std::isnan(steps[3].b));
+    assert(steps[4].cmd == Cmd::Write && steps[4].a == 0x000D && steps[4].b == 10);
+    assert(steps[5].cmd == Cmd::Stop && steps[5].b == 1);
+    assert(steps[6].cmd == Cmd::Coast);
 
     std::istringstream bad("cycle:\n  - fly 100\n");
     Config c2;

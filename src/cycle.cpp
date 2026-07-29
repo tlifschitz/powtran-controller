@@ -30,10 +30,18 @@ bool parseCycleText(std::istream &in, Config &cfg, std::vector<Step> &steps, std
 
         if (inCycle && t[0] == '-') {
             std::istringstream ss(trim(t.substr(1)));
+            std::string name, a1, a2;
+            ss >> name >> a1 >> a2;
+
+            static const struct { const char *name; Cmd cmd; } kCmdNames[] = {
+                {"run", Cmd::Run},     {"hz", Cmd::Hz},     {"stop", Cmd::Stop},
+                {"coast", Cmd::Coast}, {"wait", Cmd::Wait}, {"reset", Cmd::Reset},
+                {"write", Cmd::Write},
+            };
             Step s;
-            ss >> s.cmd;
-            std::string a1, a2;
-            ss >> a1 >> a2;
+            bool known = false;
+            for (auto &e : kCmdNames)
+                if (name == e.name) { s.cmd = e.cmd; known = true; break; }
 
             auto num = [&](const std::string &v, double &out) {
                 char *end;
@@ -47,16 +55,15 @@ bool parseCycleText(std::istream &in, Config &cfg, std::vector<Step> &steps, std
             };
 
             bool ok = false;
-            if (s.cmd == "run" || s.cmd == "hz")
-                ok = num(a1, s.a) && (a2.empty() || num(a2, s.b));
-            else if (s.cmd == "wait")
-                ok = num(a1, s.a) && s.a > 0 && a2.empty();
-            else if (s.cmd == "stop")
-                ok = a1.empty() ? true : (num(a1, s.b) && a2.empty());
-            else if (s.cmd == "coast" || s.cmd == "reset")
-                ok = a1.empty();
-            else if (s.cmd == "write")
-                ok = reg(a1, s.a) && reg(a2, s.b);
+            if (known) switch (s.cmd) {
+            case Cmd::Run:
+            case Cmd::Hz: ok = num(a1, s.a) && (a2.empty() || num(a2, s.b)); break;
+            case Cmd::Wait: ok = num(a1, s.a) && s.a > 0 && a2.empty(); break;
+            case Cmd::Stop: ok = a1.empty() ? true : (num(a1, s.b) && a2.empty()); break;
+            case Cmd::Coast:
+            case Cmd::Reset: ok = a1.empty(); break;
+            case Cmd::Write: ok = reg(a1, s.a) && reg(a2, s.b); break;
+            }
 
             if (!ok) {
                 err = "line " + std::to_string(ln) + ": bad step '" + t + "'";

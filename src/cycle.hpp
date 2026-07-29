@@ -16,8 +16,12 @@ struct Config {
     int loop         = 1;       // cycle repetitions, 0 = forever
 };
 
+// one enumerator per step command; parser and executor both switch on this,
+// so -Wswitch catches either side missing a command
+enum class Cmd { Run, Hz, Stop, Coast, Wait, Reset, Write };
+
 struct Step {
-    std::string cmd;  // run | hz | stop | coast | wait | reset | write
+    Cmd cmd{};
     double a = 0, b = NAN;  // b = NAN means "not given"
 };
 

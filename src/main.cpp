@@ -47,15 +47,17 @@ static int runCycle(Vfd &vfd, const Config &cfg, const std::vector<Step> &steps)
         for (const Step &s : steps) {
             if (gAbort) break;
             bool ok = true;
-            if (s.cmd == "run") ok = vfd.runRpm(s.a, s.b);
-            else if (s.cmd == "hz") ok = vfd.runHz(std::fabs(s.a), s.b, s.a < 0);
-            else if (s.cmd == "stop") ok = vfd.stop(s.b);
-            else if (s.cmd == "coast") ok = vfd.coast();
-            else if (s.cmd == "reset") ok = vfd.reset();
-            else if (s.cmd == "wait") ok = waitMonitor(vfd, s.a, t0);
-            else if (s.cmd == "write") {
+            switch (s.cmd) {  // no default: -Wswitch flags any unhandled Cmd
+            case Cmd::Run: ok = vfd.runRpm(s.a, s.b); break;
+            case Cmd::Hz: ok = vfd.runHz(std::fabs(s.a), s.b, s.a < 0); break;
+            case Cmd::Stop: ok = vfd.stop(s.b); break;
+            case Cmd::Coast: ok = vfd.coast(); break;
+            case Cmd::Reset: ok = vfd.reset(); break;
+            case Cmd::Wait: ok = waitMonitor(vfd, s.a, t0); break;
+            case Cmd::Write:
                 printf("write 0x%04X = %u\n", (unsigned)s.a, (unsigned)s.b);
                 ok = vfd.write((uint16_t)s.a, (uint16_t)s.b);
+                break;
             }
             if (!ok) { vfd.stop(NAN); return 1; }
         }
