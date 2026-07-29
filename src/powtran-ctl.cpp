@@ -371,7 +371,8 @@ static bool waitMonitor(Vfd &vfd, double sec, double t0) {
 static int runCycle(Vfd &vfd, const Config &cfg, const std::vector<Step> &steps) {
     double t0 = now();
     for (int it = 0; (cfg.loop == 0 || it < cfg.loop) && !gAbort; ++it) {
-        printf("--- cycle %d%s ---\n", it + 1, cfg.loop ? ("/" + std::to_string(cfg.loop)).c_str() : " (forever)");
+        std::string total = cfg.loop ? "/" + std::to_string(cfg.loop) : " (forever)";
+        printf("--- cycle %d%s ---\n", it + 1, total.c_str());
         for (const Step &s : steps) {
             if (gAbort) break;
             bool ok = true;
