@@ -332,7 +332,6 @@ public:
         return true;
     }
 
-    double maxFreqHz() const { return mMaxFreqHz; }
 
 private:
     static constexpr int kReadAttempts    = 6;
