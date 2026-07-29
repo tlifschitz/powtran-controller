@@ -4,8 +4,9 @@
 //   0x2000 W  control: 1 fwd run, 2 rev run, 3 fwd jog, 4 rev jog,
 //                      5 coast stop, 6 decel stop, 7 fault reset
 //   0x1000 W  frequency setting, 0..10000 = 0..100% of max freq (F0.19)
-//   0x1000 R  monitor block: freq, set freq, bus V, out V, out I, power,
-//             torque, speed(rpm), DI, DO  (0.01Hz/0.01Hz/0.1V/1V/0.01A units)
+//   0x1000 R  monitor block: setpoint echo (0.01%), running freq (0.01Hz),
+//             bus V (0.1V), out V (1V), out I (0.01A), power (0.1kW),
+//             torque (0.1%), rotor speed estimate (0.01Hz), DI, DO
 //   0x3000 R  status: 1 fwd run, 2 rev run, 3 stop
 //   0x8000 R  fault code (0 = none)
 //   Fg.ii  RW parameter at 0xF0'gii' (EEPROM) or 0x0'gii' (RAM only)
@@ -109,7 +110,7 @@ static bool parseCycleText(std::istream &in, Config &cfg, std::vector<Step> &ste
             return false;
         }
         std::string key = trim(t.substr(0, c)), val = trim(t.substr(c + 1));
-        inCycle = false;
+        inCycle = false;  // a top-level key ends the cycle list
         if (key == "port") cfg.port = val;
         else if (key == "baud") cfg.baud = std::atoi(val.c_str());
         else if (key == "slave") cfg.slave = std::atoi(val.c_str());
@@ -125,7 +126,8 @@ static bool parseCycleText(std::istream &in, Config &cfg, std::vector<Step> &ste
     return true;
 }
 
-// rpm -> 0x1000 permille-of-max value (always positive; direction = run cmd)
+// rpm -> 0x1000 setpoint in 0.01% of max freq, 10000 = 100%
+// (always positive; direction is chosen by the run command)
 static int rpmToPct(double rpm, double rpmPerHz, double maxFreqHz, bool &clamped) {
     double hz  = std::fabs(rpm) / rpmPerHz;
     int pct    = (int)std::lround(hz / maxFreqHz * 10000.0);
@@ -189,7 +191,7 @@ extern "C" {
 // registers
 enum : uint16_t {
     REG_FREQ_SET = 0x1000,  // write
-    REG_MONITOR  = 0x1000,  // read: freq, setfreq, busV, outV, I, P, torque, rpm
+    REG_MONITOR  = 0x1000,  // read: block documented at monitorLine()
     REG_CONTROL  = 0x2000,
     REG_STATUS   = 0x3000,
     REG_FAULT    = 0x8000,
