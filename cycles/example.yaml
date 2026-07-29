@@ -1,0 +1,27 @@
+# powtran-ctl cycle file
+# Usage: powtran-ctl cycle example.yaml
+
+rpm_per_hz: 30     # Kaifa moto MS802-4, 4-pole: 1500 rpm @ 50 Hz (synchronous, ignores slip)
+max_rpm: 1500      # safety clamp
+loop: 1            # repetitions of the cycle, 0 = forever
+
+cycle:
+  - run 1500 1     # run at 1500 rpm, 1 s ramp
+  - wait 2         # hold 2 s (prints a monitor line every second)
+  - run 750 0.5    # change speed, 0.5 s ramp
+  - wait 2
+  - run -750 1     # negative rpm = reverse
+  - wait 2
+  - stop 1         # decelerate to stop, 1 s ramp
+  - wait 1
+
+# available step commands:
+#   run <rpm> [ramp_s]     start / change speed (negative = reverse)
+#   hz <hz> [ramp_s]       same, by output frequency
+#   stop [ramp_s]          decelerating stop
+#   coast                  free-wheel stop
+#   wait <s>               hold, monitoring status/freq/rpm/current
+#   reset                  fault reset
+#   write <addr> <value>   raw register write, e.g. write 0x000D 10
+# ramp_s is the VFD accel/decel time for a full 0 -> max-freq ramp;
+# omit it to keep the previous ramp times.
